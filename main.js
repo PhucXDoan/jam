@@ -1,8 +1,13 @@
 onload = () =>
 {
-    const ctx        = document.querySelector('canvas').getContext('2d');
-    let   delta_time = null;
-    let   time       = null;
+    const ctx          = document.querySelector('canvas').getContext('2d');
+    const GRAVITY      = 0.07;
+    let   delta_time   = null;
+    let   time         = null;
+    let   planet_pos_x = 150;
+    let   planet_pos_y = 150;
+    let   planet_vel_x = 0;
+    let   planet_vel_y = 0.75;
 
     const lerp = (a, b, t) => a * (1 - t) + b * t
     const damp = (a, b, k) => lerp(a, b, k * delta_time)
@@ -11,10 +16,42 @@ onload = () =>
     {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-        let x = Math.sin(time * 0.01) * 50;
+        let sun_x = ctx.canvas.width  / 2;
+        let sun_y = ctx.canvas.height / 2;
+
+        const sun_planet_r = Math.hypot(sun_x - planet_pos_x, sun_y - planet_pos_y);
+        const planet_acc_x = GRAVITY * (sun_x - planet_pos_x) / (sun_planet_r + 1)**2 * delta_time;
+        const planet_acc_y = GRAVITY * (sun_y - planet_pos_y) / (sun_planet_r + 1)**2 * delta_time;
+
+        planet_vel_x += planet_acc_x * delta_time;
+        planet_vel_y += planet_acc_y * delta_time;
+
+        planet_pos_x += (planet_vel_x * delta_time) + (0.5 * planet_acc_x * delta_time**2);
+        planet_pos_y += (planet_vel_y * delta_time) + (0.5 * planet_acc_y * delta_time**2);
+
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc
+        (
+            sun_x,
+            sun_y,
+            Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.10,
+            0,
+            Math.PI * 2,
+        );
+        ctx.fill();
 
         ctx.fillStyle = 'green';
-        ctx.fillRect(x, 10, 150, 100);
+        ctx.beginPath();
+        ctx.arc
+        (
+            planet_pos_x,
+            planet_pos_y,
+            Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.05,
+            0,
+            Math.PI * 2,
+        );
+        ctx.fill();
     };
 
     const RESIZING_DONE_PIXEL_THRESHOLD = 6
