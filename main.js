@@ -5,11 +5,8 @@ onload = () =>
     let   time             = null;
     let   mouse_x          = 0;
     let   mouse_y          = 0;
-    let   mouse_dx         = 0;
-    let   mouse_dy         = 0;
     let   mouse_down       = false;
     const sun_mass         = 100_000;
-    const planet_mass      = 100;
     let   planet_pos_x     = 350;
     let   planet_pos_y     = 350;
     let   planet_vel_x     = 0;
@@ -35,30 +32,27 @@ onload = () =>
         document.body.style.cursor = mouse_on_planet ? 'grab' : 'default';
         planet_grabbed             = mouse_down && (mouse_on_planet || planet_grabbed);
 
-        let planet_acc_x = null;
-        let planet_acc_y = null;
+        const [gravity_x, gravity_y] = planet_grabbed ? [mouse_x, mouse_y] : [sun_x, sun_y];
+        const  gravity_r             = Math.hypot(gravity_x - planet_pos_x, gravity_y - planet_pos_y);
 
-        if (planet_grabbed)
-        {
-            planet_acc_x     = (mouse_x - planet_pos_x) * 100 - planet_vel_x * 4;
-            planet_acc_y     = (mouse_y - planet_pos_y) * 100 - planet_vel_y * 4;
-            planet_angle_acc = planet_angle_vel * -0.5;
-        }
-        else
-        {
-            const planet_sun_r = Math.hypot(sun_x - planet_pos_x, sun_y - planet_pos_y);
-            planet_acc_x     = (sun_x - planet_pos_x) / (planet_sun_r + 8)**2 * sun_mass;
-            planet_acc_y     = (sun_y - planet_pos_y) / (planet_sun_r + 8)**2 * sun_mass;
-            planet_angle_acc = ((planet_vel_y * (planet_pos_x - sun_x) - (planet_pos_y - sun_y) * planet_vel_x) / planet_sun_r**2 - planet_angle_vel) * 0.2;
-        }
+        const [planet_acc_x, planet_acc_y] =
+            planet_grabbed ? [
+                (mouse_x - planet_pos_x) * 100 - planet_vel_x * 4,
+                (mouse_y - planet_pos_y) * 100 - planet_vel_y * 4,
+            ] : [
+                (sun_x - planet_pos_x) / (gravity_r + 8)**2 * sun_mass,
+                (sun_y - planet_pos_y) / (gravity_r + 8)**2 * sun_mass,
+            ];
+
+        planet_angle_acc  = ((planet_vel_y * (planet_pos_x - sun_x) - (planet_pos_y - sun_y) * planet_vel_x) / (gravity_r + 64)**2 - planet_angle_vel) * 0.2;
 
         planet_vel_x     += planet_acc_x     * delta_time;
         planet_vel_y     += planet_acc_y     * delta_time;
         planet_angle_vel += planet_angle_acc * delta_time;
 
-        planet_pos_x += (planet_vel_x     * delta_time) + (0.5 * planet_acc_x     * delta_time**2);
-        planet_pos_y += (planet_vel_y     * delta_time) + (0.5 * planet_acc_y     * delta_time**2);
-        planet_angle += (planet_angle_vel * delta_time) + (0.5 * planet_angle_acc * delta_time**2);
+        planet_pos_x     += (planet_vel_x     * delta_time) + (0.5 * planet_acc_x     * delta_time**2);
+        planet_pos_y     += (planet_vel_y     * delta_time) + (0.5 * planet_acc_y     * delta_time**2);
+        planet_angle     += (planet_angle_vel * delta_time) + (0.5 * planet_angle_acc * delta_time**2);
 
         const bounce_off = (pos, vel, low, high) =>
                 pos < low  ? [low ,  Math.abs(vel) * 0.5] :
@@ -118,10 +112,8 @@ onload = () =>
 
     onmousemove = e =>
     {
-        mouse_x  = e.x - ctx.canvas.offsetLeft;
-        mouse_y  = e.y - ctx.canvas.offsetTop;
-        mouse_dx = e.movementX;
-        mouse_dy = e.movementY;
+        mouse_x = e.x - ctx.canvas.offsetLeft;
+        mouse_y = e.y - ctx.canvas.offsetTop;
     };
 
     onmousedown = e => mouse_down = true;
