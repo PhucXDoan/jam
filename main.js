@@ -1,20 +1,20 @@
 onload = () =>
 {
-    const ctx              = document.querySelector('canvas').getContext('2d');
-    let   delta_time       = null;
-    let   time             = null;
-    let   mouse_x          = 0;
-    let   mouse_y          = 0;
-    let   mouse_down       = false;
-    const sun_mass         = 100_000;
-    let   planet_pos_x     = 350;
-    let   planet_pos_y     = 350;
-    let   planet_vel_x     = 0;
-    let   planet_vel_y     = 250;
-    let   planet_angle     = 0;
-    let   planet_angle_vel = 0;
-    let   planet_angle_acc = 0;
-    let   planet_grabbed   = false;
+    const ctx            = document.querySelector('canvas').getContext('2d');
+    let   delta_time     = null;
+    let   time           = null;
+    let   mouse_x        = 0;
+    let   mouse_y        = 0;
+    let   mouse_down     = false;
+    const sun_mass       = 100_000;
+    let   planet_pos_x   = 350;
+    let   planet_pos_y   = 350;
+    let   planet_vel_x   = 0;
+    let   planet_vel_y   = 250;
+    let   planet_ang     = 0;
+    let   planet_ang_vel = 0;
+    let   planet_ang_acc = 0;
+    let   planet_grabbed = false;
 
     const lerp  = (a, b, t       ) => a * (1 - t) + b * t;
     const damp  = (a, b, k       ) => lerp(a, b, k ** delta_time);
@@ -44,22 +44,22 @@ onload = () =>
                 (sun_y - planet_pos_y) / (gravity_r + 8)**2 * sun_mass,
             ];
 
-        planet_angle_acc  = ((planet_vel_y * (planet_pos_x - sun_x) - (planet_pos_y - sun_y) * planet_vel_x) / (gravity_r + 64)**2 - planet_angle_vel) * 0.2;
+        planet_vel_x +=  planet_acc_x * delta_time;
+        planet_vel_y +=  planet_acc_y * delta_time;
 
-        planet_vel_x     += planet_acc_x     * delta_time;
-        planet_vel_y     += planet_acc_y     * delta_time;
-        planet_angle_vel += planet_angle_acc * delta_time;
+        planet_pos_x += (planet_vel_x * delta_time) + (0.5 * planet_acc_x * delta_time**2);
+        planet_pos_y += (planet_vel_y * delta_time) + (0.5 * planet_acc_y * delta_time**2);
 
-        planet_pos_x     += (planet_vel_x     * delta_time) + (0.5 * planet_acc_x     * delta_time**2);
-        planet_pos_y     += (planet_vel_y     * delta_time) + (0.5 * planet_acc_y     * delta_time**2);
-        planet_angle     += (planet_angle_vel * delta_time) + (0.5 * planet_angle_acc * delta_time**2);
+        const bounce_off = (pos, perp_vel, roll_vel, low, high) =>
+                pos < low  ? [low ,  Math.abs(perp_vel) * 0.5,  roll_vel / planet_r] :
+                pos > high ? [high, -Math.abs(perp_vel) * 0.5, -roll_vel / planet_r] : [pos, perp_vel, planet_ang_vel];
 
-        const bounce_off = (pos, vel, low, high) =>
-                pos < low  ? [low ,  Math.abs(vel) * 0.5] :
-                pos > high ? [high, -Math.abs(vel) * 0.5] : [pos, vel];
+        [planet_pos_x, planet_vel_x, planet_ang_vel] = bounce_off(planet_pos_x, planet_vel_x,  planet_vel_y, planet_r, ctx.canvas.width  - planet_r);
+        [planet_pos_y, planet_vel_y, planet_ang_vel] = bounce_off(planet_pos_y, planet_vel_y, -planet_vel_x, planet_r, ctx.canvas.height - planet_r);
 
-        [planet_pos_x, planet_vel_x] = bounce_off(planet_pos_x, planet_vel_x, planet_r, ctx.canvas.width  - planet_r);
-        [planet_pos_y, planet_vel_y] = bounce_off(planet_pos_y, planet_vel_y, planet_r, ctx.canvas.height - planet_r);
+        planet_ang_acc  = ((planet_vel_y * (planet_pos_x - sun_x) - (planet_pos_y - sun_y) * planet_vel_x) / (gravity_r + 64)**2 - planet_ang_vel) * 0.2;
+        planet_ang_vel += planet_ang_acc * delta_time;
+        planet_ang     += (planet_ang_vel * delta_time) + (0.5 * planet_ang_acc * delta_time**2);
 
         ctx.fillStyle = 'black';
         ctx.beginPath();
@@ -75,7 +75,7 @@ onload = () =>
 
         {
             ctx.translate(planet_pos_x, planet_pos_y);
-            ctx.rotate(planet_angle);
+            ctx.rotate(planet_ang);
 
             ctx.fillStyle = 'green';
             ctx.beginPath();
