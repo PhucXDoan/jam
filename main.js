@@ -1,9 +1,13 @@
 onload = () =>
 {
-    const ctx  = document.querySelector('canvas').getContext('2d');
-    let   time = null;
+    const ctx        = document.querySelector('canvas').getContext('2d');
+    let   delta_time = null;
+    let   time       = null;
 
-    const render = delta_time =>
+    const lerp = (a, b, t) => a * (1 - t) + b * t
+    const damp = (a, b, k) => lerp(a, b, k * delta_time)
+
+    const render = () =>
     {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
@@ -13,30 +17,42 @@ onload = () =>
         ctx.fillRect(x, 10, 150, 100);
     };
 
-    let resize_id  = null;
-    let is_resized = false;
+    const RESIZING_DONE_PIXEL_THRESHOLD = 6
+    const RESIZING_DAMPENING            = 0.015
+    let   resize_id                     = null;
+    let   resizing                      = true;
 
     onresize = () =>
     {
         clearTimeout(resize_id);
-        resize_id = setTimeout(() => (is_resized = true), 250);
+        resize_id = setTimeout(() => (resizing = true), 250);
     };
 
     const wrapper = new_time =>
     {
+        delta_time = new_time - (time ?? new_time);
+        time       = new_time;
 
-        if (is_resized)
+        if (resizing)
         {
-            ctx.canvas.width  = innerWidth;
-            ctx.canvas.height = innerHeight;
-            is_resized        = false;
-        }
-        else
-        {
-            render(new_time - (time ?? new_time));
+            if
+            (
+                Math.abs(ctx.canvas.width  - innerWidth ) < RESIZING_DONE_PIXEL_THRESHOLD &&
+                Math.abs(ctx.canvas.height - innerHeight) < RESIZING_DONE_PIXEL_THRESHOLD
+            )
+            {
+                ctx.canvas.width  = innerWidth;
+                ctx.canvas.height = innerHeight;
+                resizing          = false;
+            }
+            else
+            {
+                ctx.canvas.width  = damp(ctx.canvas.width , innerWidth , RESIZING_DAMPENING);
+                ctx.canvas.height = damp(ctx.canvas.height, innerHeight, RESIZING_DAMPENING);
+            }
         }
 
-        time = new_time;
+        render();
 
         requestAnimationFrame(wrapper);
     };
