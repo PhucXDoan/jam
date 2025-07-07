@@ -1,27 +1,53 @@
 onload = () =>
 {
-    const ctx          = document.querySelector('canvas').getContext('2d');
-    const GRAVITY      = 0.07;
-    let   delta_time   = null;
-    let   time         = null;
-    let   planet_pos_x = 150;
-    let   planet_pos_y = 150;
-    let   planet_vel_x = 0;
-    let   planet_vel_y = 0.75;
+    const ctx            = document.querySelector('canvas').getContext('2d');
+    let   delta_time     = null;
+    let   time           = null;
+    let   mouse_x        = 0;
+    let   mouse_y        = 0;
+    let   mouse_dx       = 0;
+    let   mouse_dy       = 0;
+    let   mouse_down     = false;
+    let   planet_pos_x   = 350;
+    let   planet_pos_y   = 150;
+    let   planet_vel_x   = 0;
+    let   planet_vel_y   = 0.1;
+    let   planet_grabbed = false;
 
     const lerp = (a, b, t) => a * (1 - t) + b * t
-    const damp = (a, b, k) => lerp(a, b, k * delta_time)
+    const damp = (a, b, k) => lerp(a, b, k ** delta_time)
 
-    const render = () =>
+    const update = () =>
     {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-        let sun_x = ctx.canvas.width  / 2;
-        let sun_y = ctx.canvas.height / 2;
+        const sun_x    = ctx.canvas.width  / 2;
+        const sun_y    = ctx.canvas.height / 2;
+        const planet_r = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.05;
 
-        const sun_planet_r = Math.hypot(sun_x - planet_pos_x, sun_y - planet_pos_y);
-        const planet_acc_x = GRAVITY * (sun_x - planet_pos_x) / (sun_planet_r + 1)**2 * delta_time;
-        const planet_acc_y = GRAVITY * (sun_y - planet_pos_y) / (sun_planet_r + 1)**2 * delta_time;
+        let gravity_k     = null;
+        let gravity_pos_x = null;
+        let gravity_pos_y = null;
+
+        const mouse_on_planet = Math.hypot(planet_pos_x - mouse_x, planet_pos_y - mouse_y) <= planet_r;
+
+        document.body.style.cursor = mouse_on_planet ? 'grab' : 'default';
+        planet_grabbed             = mouse_down && (mouse_on_planet || planet_grabbed);
+
+        let planet_acc_x = null;
+        let planet_acc_y = null;
+
+        if (planet_grabbed)
+        {
+            planet_acc_x = (mouse_x - planet_pos_x) * 100 - planet_vel_x * 4;
+            planet_acc_y = (mouse_y - planet_pos_y) * 100 - planet_vel_y * 4;
+        }
+        else
+        {
+            const gravity_r = Math.hypot(sun_x - planet_pos_x, sun_y - planet_pos_y);
+            planet_acc_x = (sun_x - planet_pos_x) / (gravity_r + 8)**2 * 100_000;
+            planet_acc_y = (sun_y - planet_pos_y) / (gravity_r + 8)**2 * 100_000;
+        }
 
         planet_vel_x += planet_acc_x * delta_time;
         planet_vel_y += planet_acc_y * delta_time;
@@ -47,7 +73,7 @@ onload = () =>
         (
             planet_pos_x,
             planet_pos_y,
-            Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.05,
+            planet_r,
             0,
             Math.PI * 2,
         );
@@ -55,7 +81,6 @@ onload = () =>
     };
 
     const RESIZING_DONE_PIXEL_THRESHOLD = 6
-    const RESIZING_DAMPENING            = 0.015
     let   resize_id                     = null;
     let   resizing                      = true;
 
@@ -65,31 +90,45 @@ onload = () =>
         resize_id = setTimeout(() => (resizing = true), 250);
     };
 
-    const wrapper = new_time =>
+    onmousemove = e =>
     {
-        delta_time = new_time - (time ?? new_time);
-        time       = new_time;
+        mouse_x  = e.x - ctx.canvas.offsetLeft;
+        mouse_y  = e.y - ctx.canvas.offsetTop;
+        mouse_dx = e.movementX;
+        mouse_dy = e.movementY;
+    };
 
-        if (resizing)
+    onmousedown = e => mouse_down = true;
+    onmouseup   = e => mouse_down = false;
+
+    const wrapper = new_time_ms =>
+    {
+        delta_time = new_time_ms / 1000 - (time ?? new_time_ms / 1000);
+        time       = new_time_ms / 1000;
+
+        if (delta_time < 0.100)
         {
-            if
-            (
-                Math.abs(ctx.canvas.width  - innerWidth ) < RESIZING_DONE_PIXEL_THRESHOLD &&
-                Math.abs(ctx.canvas.height - innerHeight) < RESIZING_DONE_PIXEL_THRESHOLD
-            )
+            if (resizing)
             {
-                ctx.canvas.width  = innerWidth;
-                ctx.canvas.height = innerHeight;
-                resizing          = false;
+                if
+                (
+                    Math.abs(ctx.canvas.width  - innerWidth ) < RESIZING_DONE_PIXEL_THRESHOLD &&
+                    Math.abs(ctx.canvas.height - innerHeight) < RESIZING_DONE_PIXEL_THRESHOLD
+                )
+                {
+                    ctx.canvas.width  = innerWidth;
+                    ctx.canvas.height = innerHeight;
+                    resizing          = false;
+                }
+                else
+                {
+                    ctx.canvas.width  += damp(0, (innerWidth  - ctx.canvas.width ) * 0.25, 0.1);
+                    ctx.canvas.height += damp(0, (innerHeight - ctx.canvas.height) * 0.25, 0.1);
+                }
             }
-            else
-            {
-                ctx.canvas.width  = damp(ctx.canvas.width , innerWidth , RESIZING_DAMPENING);
-                ctx.canvas.height = damp(ctx.canvas.height, innerHeight, RESIZING_DAMPENING);
-            }
-        }
 
-        render();
+            update();
+        }
 
         requestAnimationFrame(wrapper);
     };
