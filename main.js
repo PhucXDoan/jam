@@ -25,10 +25,6 @@ onload = () =>
         const sun_y    = ctx.canvas.height / 2;
         const planet_r = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.05;
 
-        let gravity_k     = null;
-        let gravity_pos_x = null;
-        let gravity_pos_y = null;
-
         const mouse_on_planet = Math.hypot(planet_pos_x - mouse_x, planet_pos_y - mouse_y) <= planet_r;
 
         document.body.style.cursor = mouse_on_planet ? 'grab' : 'default';
@@ -54,6 +50,13 @@ onload = () =>
 
         planet_pos_x += (planet_vel_x * delta_time) + (0.5 * planet_acc_x * delta_time**2);
         planet_pos_y += (planet_vel_y * delta_time) + (0.5 * planet_acc_y * delta_time**2);
+
+        const bounce_off = (pos, vel, low, high) =>
+                pos < low  ? [low ,  Math.abs(vel) * 0.5] :
+                pos > high ? [high, -Math.abs(vel) * 0.5] : [pos, vel];
+
+        [planet_pos_x, planet_vel_x] = bounce_off(planet_pos_x, planet_vel_x, planet_r, ctx.canvas.width  - planet_r);
+        [planet_pos_y, planet_vel_y] = bounce_off(planet_pos_y, planet_vel_y, planet_r, ctx.canvas.height - planet_r);
 
         ctx.fillStyle = 'black';
         ctx.beginPath();
