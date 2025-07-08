@@ -20,13 +20,20 @@ onload = () =>
     const damp  = (a, b, k       ) => lerp(a, b, k ** delta_time);
     const wedge = (ax, ay, bx, by) => ax * by - ay * bx;
 
+    const phuc = new Image();
+    phuc.src = './data/phuc.png';
+
+    const katelyn = new Image();
+    katelyn.src = './data/katelyn.png';
+
     const update = () =>
     {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
         const sun_x           = ctx.canvas.width  / 2;
         const sun_y           = ctx.canvas.height / 2;
-        const planet_r        = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.05;
+        const sun_r           = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.15;
+        const planet_r        = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.1;
         const mouse_on_planet = Math.hypot(planet_pos_x - mouse_x, planet_pos_y - mouse_y) <= planet_r;
 
         document.body.style.cursor = mouse_on_planet ? 'grab' : 'default';
@@ -61,43 +68,19 @@ onload = () =>
         planet_ang_vel += planet_ang_acc * delta_time;
         planet_ang     += (planet_ang_vel * delta_time) + (0.5 * planet_ang_acc * delta_time**2);
 
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.arc
-        (
-            sun_x,
-            sun_y,
-            Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.10,
-            0,
-            Math.PI * 2,
-        );
-        ctx.fill();
+        {
+            ctx.translate(sun_x, sun_y);
+            ctx.rotate(Math.sin(time) * 0.1);
+            ctx.drawImage(katelyn, -sun_r, -sun_r, sun_r * 2, sun_r * 2);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
 
         {
             ctx.translate(planet_pos_x, planet_pos_y);
             ctx.rotate(planet_ang);
-
-            ctx.fillStyle = 'green';
-            ctx.beginPath();
-            ctx.fillRect(-planet_r, -planet_r, planet_r * 2, planet_r * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = 'red';
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.lineTo(0, 0);
-            ctx.lineTo(150, 0);
-            ctx.stroke();
-
+            ctx.drawImage(phuc, -planet_r, -planet_r, planet_r * 2, planet_r * 2);
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
-
-        ctx.strokeStyle = 'blue';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.lineTo(sun_x, sun_y);
-        ctx.lineTo(planet_pos_x, planet_pos_y);
-        ctx.stroke();
     };
 
     const RESIZING_DONE_PIXEL_THRESHOLD = 6
