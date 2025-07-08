@@ -2,47 +2,45 @@
 
 onload = () =>
 {
-    const ctx        = document.querySelector('canvas').getContext('2d');
+    const lerp     = (a, b, t       ) => a * (1 - t) + b * t;
+    const damp     = (a, b, k       ) => lerp(a, b, k ** delta_time);
+    const wedge    = (ax, ay, bx, by) => ax * by - ay * bx;
+    const random   = (a = 0, b = 1)   => lerp(a, b, Math.random())
+    const drawText = (text, ...rest) =>
+    {
+        ctx.strokeText(text, ...rest);
+        ctx.fillText(text, ...rest);
+    };
+
+    const ctx = document.querySelector('canvas').getContext('2d');
+
+    ctx.canvas.width  = innerWidth;
+    ctx.canvas.height = innerHeight;
+
     let   delta_time = null;
     let   time       = null;
     let   mouse_x    = 0;
     let   mouse_y    = 0;
     let   mouse_down = false;
     const sun_mass   = 100_000;
-    const planets    =
-        [
-            {
-                pos_x   : 350,
-                pos_y   : 350,
-                vel_x   : 0,
-                vel_y   : 250,
-                ang     : 0,
-                ang_vel : 0,
-                ang_acc : 0,
-                grabbed : false,
-            },
-            {
-                pos_x   : 50,
-                pos_y   : 350,
-                vel_x   : 0,
-                vel_y   : 250,
-                ang     : 0,
-                ang_vel : 0,
-                ang_acc : 0,
-                grabbed : false,
-            },
-        ];
-
-    const lerp   = (a, b, t       ) => a * (1 - t) + b * t;
-    const damp   = (a, b, k       ) => lerp(a, b, k ** delta_time);
-    const wedge  = (ax, ay, bx, by) => ax * by - ay * bx;
-    const random = (a = 0, b = 1)   => lerp(a, b, Math.random())
+    const planets    = [0, 1, 2].map(index => ({
+        pos_x   : (0.5 + 0.3 * random(-1, 1)) * ctx.canvas.width,
+        pos_y   : (0.5 + 0.3 * random(-1, 1)) * ctx.canvas.height,
+        vel_x   : random(0, 250),
+        vel_y   : random(0, 250),
+        ang     : 0,
+        ang_vel : 0,
+        ang_acc : 0,
+        grabbed : false,
+        img     : (() => {
+            const img = new Image();
+            img.src = `./data/phucs/${index}.png`;
+            return img;
+        })(),
+    }))
 
     const background = new Image();
     background.src = './data/background.jpg';
-
-    const phuc = new Image();
-    phuc.src = './data/phuc.png';
 
     const katelyn = new Image();
     katelyn.src = './data/katelyn.png';
@@ -51,9 +49,9 @@ onload = () =>
     {
         ctx.drawImage(background, 0, 0, ctx.canvas.width, ctx.canvas.height);
 
-        const sun_x           = ctx.canvas.width  / 2;
-        const sun_y           = ctx.canvas.height / 2;
-        const sun_r           = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.15;
+        const sun_x = ctx.canvas.width  / 2;
+        const sun_y = ctx.canvas.height / 2;
+        const sun_r = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.15;
 
         {
             ctx.translate(sun_x, sun_y);
@@ -62,11 +60,22 @@ onload = () =>
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
+        ctx.font      = `${Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.06}px Comic Sans Ms`;
+        ctx.fillStyle = `rgb(${Math.cos(time)**2*256}, ${Math.sin(3.1 * time)**2*256}, 128)`;
+        ctx.lineWidth = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.01;
+        ctx.beginPath();
+        drawText
+        (
+            'my life revolves around u',
+            100 + Math.sin(time) * 20,
+            100 + Math.cos(time) * 20,
+        );
+
         document.body.style.cursor = 'default';
 
         for (const planet of planets)
         {
-            const planet_r        = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.05;
+            const planet_r        = Math.sqrt(ctx.canvas.width * ctx.canvas.height) * 0.07;
             const mouse_on_planet = Math.hypot(planet.pos_x - mouse_x, planet.pos_y - mouse_y) <= planet_r;
 
             if (mouse_on_planet)
@@ -128,7 +137,7 @@ onload = () =>
 
             ctx.translate(planet.pos_x, planet.pos_y);
             ctx.rotate(planet.ang);
-            ctx.drawImage(phuc, -planet_r, -planet_r, planet_r * 2, planet_r * 2);
+            ctx.drawImage(planet.img, -planet_r, -planet_r, planet_r * 2, planet_r * 2);
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
     };
@@ -151,9 +160,6 @@ onload = () =>
 
     onmousedown = e => mouse_down = true;
     onmouseup   = e => mouse_down = false;
-
-    ctx.canvas.width  = innerWidth;
-    ctx.canvas.height = innerHeight;
 
     const wrapper = new_time_ms =>
     {
