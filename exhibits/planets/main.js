@@ -12,7 +12,7 @@ let planets    = [0, 1, 2].map(index => ({
     grabbed : false,
     img     : (() => {
         let img = new Image();
-        img.src = `./data/phucs/${index}.png`;
+        img.src = `./exhibits/planets/data/phucs/${index}.png`;
         return img;
     })(),
 }))
@@ -21,10 +21,10 @@ let sun_x = ctx.canvas.width  / 2;
 let sun_y = ctx.canvas.height / 2;
 
 let background = new Image();
-background.src = './data/background.jpg';
+background.src = './exhibits/planets/data/background.jpg';
 
 let katelyn = new Image();
-katelyn.src = './data/katelyn.png';
+katelyn.src = './exhibits/planets/data/katelyn.png';
 
 const update = () =>
 {

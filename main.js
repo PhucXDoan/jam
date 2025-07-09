@@ -26,7 +26,7 @@ onload = () =>
 
     new Promise((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = `./exhibits/${exhibit}.js`;
+        script.src = `./exhibits/${exhibit}/main.js`;
         script.onerror = reject;
         script.onload  = resolve;
         document.body.appendChild(script);
