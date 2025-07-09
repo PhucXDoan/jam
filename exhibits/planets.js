@@ -1,29 +1,7 @@
 "use strict";
 
-const lerp     = (a, b, t       ) => a * (1 - t) + b * t;
-const damp     = (a, b, k       ) => lerp(a, b, k ** delta_time);
-const wedge    = (ax, ay, bx, by) => ax * by - ay * bx;
-const random   = (a = 0, b = 1)   => lerp(a, b, Math.random())
-const geolen   = k                => Math.sqrt(ctx.canvas.width * ctx.canvas.height) * k;
-const drawText = (text, ...rest)  =>
-{
-    ctx.strokeText(text, ...rest);
-    ctx.fillText(text, ...rest);
-};
-
-const ctx = document.querySelector('canvas').getContext('2d');
-
-ctx.canvas.width  = innerWidth;
-ctx.canvas.height = innerHeight;
-
-let   delta_time = null;
-let   time       = null;
-let   keys       = {};
-let   mouse_x    = 0;
-let   mouse_y    = 0;
-let   mouse_down = false;
-const sun_mass   = 100_000;
-const planets    = [0, 1, 2].map(index => ({
+let sun_mass   = 100_000;
+let planets    = [0, 1, 2].map(index => ({
     pos_x   : (0.5 + 0.3 * random(-1, 1)) * ctx.canvas.width,
     pos_y   : (0.5 + 0.3 * random(-1, 1)) * ctx.canvas.height,
     vel_x   : random(0, 250),
@@ -33,7 +11,7 @@ const planets    = [0, 1, 2].map(index => ({
     ang_acc : 0,
     grabbed : false,
     img     : (() => {
-        const img = new Image();
+        let img = new Image();
         img.src = `./data/phucs/${index}.png`;
         return img;
     })(),
@@ -42,10 +20,10 @@ const planets    = [0, 1, 2].map(index => ({
 let sun_x = ctx.canvas.width  / 2;
 let sun_y = ctx.canvas.height / 2;
 
-const background = new Image();
+let background = new Image();
 background.src = './data/background.jpg';
 
-const katelyn = new Image();
+let katelyn = new Image();
 katelyn.src = './data/katelyn.png';
 
 const update = () =>
@@ -83,7 +61,7 @@ const update = () =>
     ctx.fillStyle = `rgb(${Math.cos(time)**2*256}, ${Math.sin(3.1 * time)**2*256}, 128)`;
     ctx.lineWidth = geolen(0.01);
     ctx.beginPath();
-    drawText
+    draw_text
     (
         'my life revolves around u',
         100 + Math.sin(time) * 20,
@@ -94,8 +72,8 @@ const update = () =>
 
     for (const planet of planets)
     {
-        const planet_r        = geolen(0.07);
-        const mouse_on_planet = Math.hypot(planet.pos_x - mouse_x, planet.pos_y - mouse_y) <= planet_r;
+        let planet_r        = geolen(0.07);
+        let mouse_on_planet = Math.hypot(planet.pos_x - mouse_x, planet.pos_y - mouse_y) <= planet_r;
 
         if (mouse_on_planet)
         {
@@ -104,8 +82,8 @@ const update = () =>
 
         planet.grabbed = mouse_down && (mouse_on_planet || planet.grabbed);
 
-        const [gravity_x, gravity_y] = planet.grabbed ? [mouse_x, mouse_y] : [sun_x, sun_y];
-        const  gravity_r             = Math.hypot(gravity_x - planet.pos_x, gravity_y - planet.pos_y);
+        let [gravity_x, gravity_y] = planet.grabbed ? [mouse_x, mouse_y] : [sun_x, sun_y];
+        let  gravity_r             = Math.hypot(gravity_x - planet.pos_x, gravity_y - planet.pos_y);
 
         let [planet_acc_x, planet_acc_y] =
             planet.grabbed ? [
@@ -126,16 +104,16 @@ const update = () =>
         planet.pos_y += (planet.vel_y * delta_time) + (0.5 * planet_acc_y * delta_time**2);
 
         const bounce_off = (pos, perp_vel, roll_vel, low, high) =>
-                pos < low  ? [low ,  Math.abs(perp_vel) * random(0.4, 0.6),  roll_vel / planet_r] :
-                pos > high ? [high, -Math.abs(perp_vel) * random(0.4, 0.6), -roll_vel / planet_r] : [pos, perp_vel, planet.ang_vel];
+            pos < low  ? [low ,  Math.abs(perp_vel) * random(0.4, 0.6),  roll_vel / planet_r] :
+            pos > high ? [high, -Math.abs(perp_vel) * random(0.4, 0.6), -roll_vel / planet_r] : [pos, perp_vel, planet.ang_vel];
 
         [planet.pos_x, planet.vel_x, planet.ang_vel] = bounce_off(planet.pos_x, planet.vel_x,  planet.vel_y, planet_r, ctx.canvas.width  - planet_r);
         [planet.pos_y, planet.vel_y, planet.ang_vel] = bounce_off(planet.pos_y, planet.vel_y, -planet.vel_x, planet_r, ctx.canvas.height - planet_r);
 
         if (Math.hypot(planet.pos_x - sun_x, planet.pos_y - sun_y) < sun_r)
         {
-            const normal_x = (planet.pos_x - sun_x) / Math.hypot(planet.pos_x - sun_x, planet.pos_y - sun_y);
-            const normal_y = (planet.pos_y - sun_y) / Math.hypot(planet.pos_x - sun_x, planet.pos_y - sun_y);
+            let normal_x = (planet.pos_x - sun_x) / Math.hypot(planet.pos_x - sun_x, planet.pos_y - sun_y);
+            let normal_y = (planet.pos_y - sun_y) / Math.hypot(planet.pos_x - sun_x, planet.pos_y - sun_y);
 
             planet.pos_x = sun_x + normal_x * sun_r;
             planet.pos_y = sun_y + normal_y * sun_r;
@@ -163,58 +141,3 @@ const update = () =>
         ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
 };
-
-const RESIZING_DONE_PIXEL_THRESHOLD = 6
-let   resize_id                     = null;
-let   resizing                      = true;
-
-onresize = () =>
-{
-    clearTimeout(resize_id);
-    resize_id = setTimeout(() => (resizing = true), 250);
-};
-
-onmousemove = e =>
-{
-    mouse_x = e.x - ctx.canvas.offsetLeft;
-    mouse_y = e.y - ctx.canvas.offsetTop;
-};
-
-onmousedown = e => mouse_down = true;
-onmouseup   = e => mouse_down = false;
-onkeyup     = e => keys[e.code] = false;
-onkeydown   = e => keys[e.code] = true;
-
-const wrapper = new_time_ms =>
-{
-    delta_time = new_time_ms / 1000 - (time ?? new_time_ms / 1000);
-    time       = new_time_ms / 1000;
-
-    if (delta_time < 0.100)
-    {
-        if (resizing)
-        {
-            if
-            (
-                Math.abs(ctx.canvas.width  - innerWidth ) < RESIZING_DONE_PIXEL_THRESHOLD &&
-                Math.abs(ctx.canvas.height - innerHeight) < RESIZING_DONE_PIXEL_THRESHOLD
-            )
-            {
-                ctx.canvas.width  = innerWidth;
-                ctx.canvas.height = innerHeight;
-                resizing          = false;
-            }
-            else
-            {
-                ctx.canvas.width  += damp(0, (innerWidth  - ctx.canvas.width ) * 0.25, 0.1);
-                ctx.canvas.height += damp(0, (innerHeight - ctx.canvas.height) * 0.25, 0.1);
-            }
-        }
-
-        update();
-    }
-
-    requestAnimationFrame(wrapper);
-};
-
-requestAnimationFrame(wrapper);
